@@ -6,13 +6,21 @@
          contextName = "SetButtonsView.updateScrollIndicators(_:):ExerciseListView.swift">
          <PersistentStrings>
             <PersistentString
-               value = "canScrollRight">
+               value = "scrollOffset">
             </PersistentString>
             <PersistentString
                value = "canScrollLeft">
             </PersistentString>
             <PersistentString
-               value = "scrollOffset">
+               value = "canScrollRight">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "WorkoutView.onCompleteExercise():WorkoutView.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "currentExercise">
             </PersistentString>
          </PersistentStrings>
       </ContextState>
