@@ -6,11 +6,12 @@
 //
 
 import SwiftUI
+import SharedModels
 
 struct SetView: View {
     @Binding var sets: [ExerciseSet]
     @Binding var detailView: Bool
-    @Binding var workoutStarted: Bool
+    let completeSet: (Binding<ExerciseSet>, Bool) -> Void
 
     let buttonWidth: CGFloat = 40
     let buttonSpacing: CGFloat = 4
@@ -19,12 +20,13 @@ struct SetView: View {
     private let setsMaxWidth: CGFloat
 
     init(
-        sets: Binding<[ExerciseSet]>, detailView: Binding<Bool>,
-        workoutStarted: Binding<Bool>
+        sets: Binding<[ExerciseSet]>,
+        detailView: Binding<Bool>,
+        completeSet: @escaping (Binding<ExerciseSet>, Bool) -> Void
     ) {
         self._sets = sets
         self._detailView = detailView
-        self._workoutStarted = workoutStarted
+        self.completeSet = completeSet
 
         self.setsWidth =
             (buttonWidth * CGFloat(sets.wrappedValue.count))
@@ -33,99 +35,14 @@ struct SetView: View {
     }
 
     var body: some View {
-
-        if detailView {
-            SetDetailView(sets: $sets, completeSet: completeSet)
-        } else {
-            SetButtonsView(sets: $sets, completeSet: completeSet)
-        }
-    }
-
-    private func completeSet(
-        set: Binding<ExerciseSet>, proxy: ScrollViewProxy?, skipSet: Bool
-    ) {
-        // Check if there are any incomplete sets (not completed and not skipped)
-        if let firstIncompleteIndex = sets.firstIndex(where: {
-            !$0.isCompleted && !$0.isSkipped
-        }) {
-            // If the clicked set is incomplete, mark the first incomplete set as completed or skipped
-            if !set.wrappedValue.isCompleted && !set.wrappedValue.isSkipped {
-                if detailView {
-                    if skipSet {
-                        sets[firstIncompleteIndex].isSkipped = true
-                    } else {
-                        sets[firstIncompleteIndex].isCompleted = true
-                    }
-                } else {
-                    withAnimation {
-                        if skipSet {
-                            sets[firstIncompleteIndex].isSkipped = true
-                        } else {
-                            sets[firstIncompleteIndex].isCompleted = true
-                        }
-                    }
-                }
-
-                // Scroll to the next incomplete set, if any
-                if let nextIncompleteIndex = sets.indices.first(where: {
-                    $0 > firstIncompleteIndex && !sets[$0].isCompleted
-                        && !sets[$0].isSkipped
-                }) {
-                    guard let proxy = proxy else {
-                        return
-                    }
-
-                    withAnimation {
-                        proxy.scrollTo(
-                            sets[nextIncompleteIndex].id, anchor: .center)
-                    }
-                }
-
-                if !workoutStarted {
-                    withAnimation {
-                        workoutStarted = true
-                    }
-                }
-
-                return
-            }
-        }
-
-        // Check if there are any completed or skipped sets
-        if let lastHandledIndex = sets.lastIndex(where: {
-            $0.isCompleted || $0.isSkipped
-        }) {
-            // If the clicked set is completed or skipped, undo the last handled set
-            if set.wrappedValue.isCompleted || set.wrappedValue.isSkipped {
-                if detailView {
-                    if sets[lastHandledIndex].isCompleted {
-                        sets[lastHandledIndex].isCompleted = false
-                    } else if sets[lastHandledIndex].isSkipped {
-                        sets[lastHandledIndex].isSkipped = false
-                    }
-                } else {
-                    withAnimation {
-                        if sets[lastHandledIndex].isCompleted {
-                            sets[lastHandledIndex].isCompleted = false
-                        } else if sets[lastHandledIndex].isSkipped {
-                            sets[lastHandledIndex].isSkipped = false
-                        }
-                    }
-                }
-
-                guard let proxy = proxy else {
-                    return
-                }
-
-                // Scroll back to the last handled set
-                withAnimation {
-                    proxy.scrollTo(
-                        sets[lastHandledIndex].id, anchor: .center)
-                }
+        ZStack {
+            if detailView {
+                SetDetailView(sets: $sets, completeSet: completeSet)
+            } else {
+                SetButtonsView(sets: $sets, completeSet: completeSet)
             }
         }
     }
-
 }
 
 #Preview {
@@ -143,12 +60,12 @@ struct SetView: View {
     SetView(
         sets: .constant(sets),
         detailView: .constant(false),
-        workoutStarted: .constant(false)
+        completeSet: {_,_ in}
     )
 
     SetView(
         sets: .constant(sets),
         detailView: .constant(true),
-        workoutStarted: .constant(true)
+        completeSet: {_,_ in}
     )
 }

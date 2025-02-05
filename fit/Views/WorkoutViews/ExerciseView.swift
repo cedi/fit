@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SharedModels
 
 struct WorkoutExerciseView: View {
     @State private var expanded: Bool = false
@@ -13,6 +14,7 @@ struct WorkoutExerciseView: View {
     @Binding var exercise: Exercise
     @Binding var workoutStarted: Bool
     var isCurrentExercise: Bool
+    let completeSet: (Binding<ExerciseSet>, Bool) -> Void
 
     var body: some View {
         // Now, let's add the title, top aligned
@@ -47,7 +49,7 @@ struct WorkoutExerciseView: View {
                     SetView(
                         sets: $exercise.sets,
                         detailView: $expanded,
-                        workoutStarted: $workoutStarted
+                        completeSet: completeSet
                     )
                 }
             }
@@ -58,7 +60,7 @@ struct WorkoutExerciseView: View {
                     SetView(
                         sets: $exercise.sets,
                         detailView: $expanded,
-                        workoutStarted: $workoutStarted
+                        completeSet: completeSet
                     )
 
                     if !exercise.description.isEmpty {
@@ -154,7 +156,8 @@ struct WorkoutExerciseView: View {
     WorkoutExerciseView(
         exercise: .constant(exercise),
         workoutStarted: .constant(true),
-        isCurrentExercise: true
+        isCurrentExercise: true,
+        completeSet: {_,_ in}
     )
     .frame(height: 100)
 }

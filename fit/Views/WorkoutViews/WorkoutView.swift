@@ -5,7 +5,10 @@
 //  Created by Cedric Kienzler on 15.01.25.
 //
 
+import ActivityKit
+import SharedModels
 import SwiftUI
+import WidgetKit
 
 struct StickyHeader: View {
     @Binding var workoutGroup: WorkoutGroup
@@ -29,6 +32,7 @@ struct WorkoutListView: View {
     @Binding var workout: Workout
     @Binding var currentExercise: Exercise?
     @Binding var workoutStarted: Bool
+    let completeSet: (Binding<ExerciseSet>, Bool) -> Void
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -42,10 +46,34 @@ struct WorkoutListView: View {
                                 exercise: $exercise,
                                 workoutStarted: $workoutStarted,
                                 isCurrentExercise: currentExercise?.id
-                                    == exercise.id
+                                    == exercise.id,
+                                completeSet: completeSet
                             )
                             .listRowInsets(EdgeInsets())
                             .id(exercise.id)
+                            .swipeActions(
+                                edge: .leading, allowsFullSwipe: true
+                            ) {
+                                Button(role: .cancel) {} label: {
+                                    Label("PR", systemImage: "trophy")
+                                }
+                                .tint(Color.orange)
+                            }
+                            .swipeActions(
+                                edge: .leading, allowsFullSwipe: false
+                            ) {
+                                Button(role: .cancel) {} label: {
+                                    Label("Note", systemImage: "pencil.and.list.clipboard")
+                                }
+                            }
+                            .swipeActions(
+                                edge: .trailing, allowsFullSwipe: true
+                            ) {
+                                Button(role: .cancel) {} label: {
+                                    Label("Done", systemImage: "checkmark.circle")
+                                }
+                                .tint(Color.accentColor)
+                            }
                         }
                     }
                 }
@@ -66,76 +94,146 @@ struct WorkoutListView: View {
     }
 }
 
-struct WorkoutControlsView: View {
-    @Binding var workout: Workout
-    @Binding var workoutStarted: Bool
+struct WorkoutView: View {
+    @State var workout: Workout
+    @State var currentExercise: Exercise?
+    @State private var workoutStarted: Bool = false
 
     @State private var elapsedTime: TimeInterval = 0
     @State private var timer: Timer? = nil
     @State private var workoutDone: Bool = false
 
-    var body: some View {
-        HStack(alignment: .center) {
-            Button(action: workoutBtnAction) {
-                HStack {
-                    Image(systemName: workoutStarted ? "trophy" : "play")
-                    Text(workoutStarted ? "Done" : "Start Workout")
+    @State private var activity: Activity<WorkoutActivityAttributes>? = nil
+    //@StateObject private var workoutState = WorkoutState.shared
 
-                    if workoutStarted {
-                        Text("(\(formatElapsedTime(elapsedTime)))")
-                    }
-                }
+    init(workout: Workout) {
+        self.workout = workout
+        self.currentExercise = workout.nextExercise()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            WorkoutListView(
+                workout: $workout,
+                currentExercise: $currentExercise,
+                workoutStarted: $workoutStarted,
+                completeSet: completeSet
+            )
+
+            Spacer()
+
+            ProgressView(value: workout.getCompletedPercent())
+                .progressViewStyle(
+                    LinearProgressViewStyle(tint: Color.accentColor)
+                )
+                .animation(.easeInOut, value: workout.getCompletedPercent())
+                .frame(height: 1)
                 .padding()
-                .frame(maxWidth: .infinity)
-            }
-            .padding(.horizontal)
-            .navigationDestination(isPresented: $workoutDone) {
-                WorkoutCompleteView(
-                    workout: $workout,
-                    showView: $workoutDone,
-                    isNavigatingBack: $workoutStarted
-                ).onDisappear {
+
+            HStack(alignment: .center) {
+                HStack {
                     if workoutStarted {
-                        startTimer()
+                        NavigationLink(
+                            destination:
+                                WorkoutCompleteView(
+                                    workout: $workout,
+                                    showView: $workoutDone,
+                                    isNavigatingBack: $workoutStarted
+                                )
+                        ) {
+                            HStack {
+                                Image(systemName: "trophy")
+                                Text("Done")
+                                    .bold()
+                                Text("(\(formatElapsedTime(elapsedTime)))")
+                            }
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                        }
+                        .onDisappear {
+                            if workoutStarted {
+                                startTimer()
+                            }
+                        }
+                    } else {
+                        Button(action: workoutBtnAction) {
+                            HStack {
+                                Image(systemName: "play")
+                                Text("Start")
+                            }.padding()
+                                .frame(maxWidth: .infinity)
+                        }
                     }
                 }
+                .padding(.horizontal)
             }
-        }
-        .font(.headline)
-        .foregroundColor(.white)
-        .background(Color.accentColor)
-        .cornerRadius(10)
-        .onDisappear {
-            timer?.invalidate()
-        }
-        .navigationBarItems(
-            trailing: Button(action: workoutBtnAction) {
-                HStack {
-                    Text(workoutStarted ? "Done" : "Start")
-                        .bold()
+            .font(.headline)
+            .foregroundColor(.white)
+            .background(Color.accentColor)
+            .cornerRadius(10)
+            .onDisappear {
+                timer?.invalidate()
+            }
+            .navigationBarItems(
+                trailing: HStack {
+                    if workoutStarted {
+                        NavigationLink(
+                            destination:
+                                WorkoutCompleteView(
+                                    workout: $workout,
+                                    showView: $workoutDone,
+                                    isNavigatingBack: $workoutStarted
+                                )
+                        ) {
+                            Text("Done")
+                                .bold()
+                        }
+                        .onDisappear {
+                            if workoutStarted {
+                                startTimer()
+                            }
+                        }
+                    } else {
+                        Button(action: workoutBtnAction) {
+                            Text("Start")
+                        }
+                    }
                 }
-            }
-        )
-        .onChange(of: workoutStarted) {
-            if workoutStarted {
-                workout.startTime = Date()
-                startTimer()
-            }
+            )
+            .padding(.horizontal)
+
+            Spacer()
+        }
+        .navigationTitle(workout.name)
+        .onChange(of: workout) {
+            updateLiveActivity()
         }
     }
 
-    private func workoutBtnAction() {
-        if workoutStarted {
-            workout.endTime = Date()  // Save end time
-            timer?.invalidate()  // stop the timer
+    func startWorkout() {
+        workout.startTime = Date()
+        startTimer()
 
-            withAnimation {
-                workoutDone = true
-            }
-        } else {
-            withAnimation {
-                workoutStarted = true
-            }
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else {
+            print("Live Activities are not enabled.")
+            return
+        }
+
+        startLiveActivity()
+
+        withAnimation {
+            workoutStarted = true
+        }
+    }
+
+    func stopWorkout() {
+        workout.endTime = Date()  // Save end time
+        timer?.invalidate()  // stop the timer
+
+        endLiveActivity()
+
+        withAnimation {
+            workoutDone = true
         }
     }
 
@@ -145,6 +243,169 @@ struct WorkoutControlsView: View {
                 await updateElapsedTime()
             }
         }
+    }
+
+    private func workoutBtnAction() {
+        if workoutStarted {
+            stopWorkout()
+        } else {
+            startWorkout()
+        }
+    }
+
+    private func completeSet(
+        set: Binding<ExerciseSet>, skipSet: Bool
+    ) {
+        var exercise: Exercise? = nil
+
+        for group in workout.workout {
+            for e in group.exercises {
+                if e.sets.contains(where: { $0.id == set.id }) {
+                    exercise = e
+                }
+            }
+        }
+
+        guard let currentExercise = exercise else { return }
+
+        // Handle incomplete sets
+        if let firstIncompleteSet = currentExercise.findFirstIncompleteSet() {
+            if !set.wrappedValue.isCompleted && !set.wrappedValue.isSkipped {
+                withAnimation {
+                    completeOrSkipSet(
+                        firstIncompleteSet, in: $workout, skip: skipSet)
+
+                    if !workoutStarted {
+                        startWorkout()
+                    }
+                }
+                return
+            }
+        }
+
+        // Handle undo of the last completed/skipped set
+        if let lastHandledSet = currentExercise.findLastHandledSet() {
+            withAnimation {
+                undoLastHandledSet(lastHandledSet, in: $workout)
+            }
+        }
+    }
+
+    private func completeOrSkipSet(
+        _ set: ExerciseSet, in workout: Binding<Workout>, skip: Bool
+    ) {
+        updateSet(set, in: workout) { set in
+            if skip {
+                set.isSkipped = true
+            } else {
+                set.isCompleted = true
+            }
+        }
+    }
+
+    private func undoLastHandledSet(
+        _ set: ExerciseSet, in workout: Binding<Workout>
+    ) {
+        updateSet(set, in: workout) { set in
+            set.isCompleted = false
+            set.isSkipped = false
+        }
+    }
+
+    private func updateSet(
+        _ targetSet: ExerciseSet, in workout: Binding<Workout>,
+        update: (inout ExerciseSet) -> Void
+    ) {
+        for groupIndex in workout.wrappedValue.workout.indices {
+            for exerciseIndex in workout.wrappedValue.workout[groupIndex]
+                .exercises.indices
+            {
+                if let setIndex = workout.wrappedValue.workout[groupIndex]
+                    .exercises[exerciseIndex].sets.firstIndex(where: {
+                        $0.id == targetSet.id
+                    })
+                {
+                    //                    Task {
+                    //                        await workoutState.completeSet(setId: targetSet.id)
+                    //                    }
+
+                    update(
+                        &workout.wrappedValue.workout[groupIndex].exercises[
+                            exerciseIndex
+                        ].sets[setIndex])
+                    return
+                }
+            }
+        }
+    }
+
+    @MainActor
+    func startLiveActivity() {
+        let attributes = WorkoutActivityAttributes(name: workout.name)
+        let initialContentState = WorkoutActivityAttributes.ContentState(
+            exercise: workout.nextExercise() ?? Exercise(),
+            setId: workout.nextExercise()?.nextSet()?.id ?? 0
+        )
+
+        let activityContent = ActivityContent(
+            state: initialContentState,
+            staleDate: Date().addingTimeInterval(10)
+        )
+
+        do {
+            activity = try Activity<WorkoutActivityAttributes>.request(
+                attributes: attributes,
+                content: activityContent,
+                pushType: nil
+            )
+
+            //            WorkoutState.shared.setActivity(activity)
+
+            print("Live Activity started with ID: \(activity?.id ?? "error")")
+        } catch {
+            print(
+                "Failed to start Live Activity: \(error.localizedDescription)")
+        }
+    }
+
+    @MainActor
+    func updateLiveActivity() {
+        guard let activity = activity else { return }
+
+        let state = WorkoutActivityAttributes.ContentState(
+            exercise: workout.nextExercise() ?? Exercise(),
+            setId: workout.nextExercise()?.nextSet()?.id ?? 0
+        )
+
+        let activityContent = ActivityContent(
+            state: state,
+            staleDate: Date().addingTimeInterval(10)
+        )
+
+        Task {
+            await activity.update(activityContent)
+        }
+        print("Live Activity updated successfully!")
+    }
+
+    @MainActor
+    func endLiveActivity() {
+        guard let activity = activity else { return }
+
+        let finalContentState = WorkoutActivityAttributes.ContentState(
+            exercise: Exercise(), setId: 0
+        )
+
+        let finalActivityContent = ActivityContent(
+            state: finalContentState,
+            staleDate: nil
+        )
+
+        Task {
+            await activity.end(
+                finalActivityContent, dismissalPolicy: .immediate)
+        }
+        print("Live Activity ended successfully!")
     }
 
     @MainActor
@@ -169,223 +430,8 @@ struct WorkoutControlsView: View {
     }
 }
 
-struct WorkoutView: View {
-    @State var workout: Workout
-    @State var currentExercise: Exercise?
-    @State private var workoutStarted: Bool = false
-
-    init(workout: Workout) {
-        self.workout = workout
-        self.currentExercise = workout.nextExercise()
-    }
-
-    var body: some View {
-        NavigationStack {
-            VStack(alignment: .leading, spacing: 0) {
-                WorkoutListView(
-                    workout: $workout,
-                    currentExercise: $currentExercise,
-                    workoutStarted: $workoutStarted
-                )
-
-                Spacer()
-
-                ProgressView(value: workout.getCompletedPercent())
-                    .progressViewStyle(
-                        LinearProgressViewStyle(tint: Color.accentColor)
-                    )
-                    .animation(.easeInOut, value: workout.getCompletedPercent())
-                    .frame(height: 1)
-                    .padding()
-
-                WorkoutControlsView(
-                    workout: $workout, workoutStarted: $workoutStarted
-                )
-                .padding(.horizontal)
-
-                Spacer()
-            }
-            .navigationTitle(workout.name)
-        }
-    }
-}
-
 #Preview {
-    let deadliftWorkout = Workout(
-        id: 1,
-        name: "Deadlift",
-        description: "foobar2342",
-        workout: [
-            WorkoutGroup(
-                id: 11,
-                name: "Warmup",
-                expectedDurationMin: 15,
-                exercises: [
-                    Exercise(
-                        id: 111,
-                        name: "Cat-Cow Stretches",
-                        sets: [
-                            ExerciseSet(
-                                id: 1111, setNumber: 1, weight: 0, reps: 10,
-                                isCompleted: false
-                            ),
-                            ExerciseSet(
-                                id: 1112, setNumber: 2, weight: 0, reps: 10,
-                                isCompleted: false
-                            ),
-                        ],
-                        description: "Foobar"
-                    ),
-                    Exercise(
-                        id: 112,
-                        name: "Glute Bridges",
-                        sets: [
-                            ExerciseSet(
-                                id: 1121, setNumber: 1, weight: 0, reps: 10,
-                                isCompleted: false
-                            ),
-                            ExerciseSet(
-                                id: 1122, setNumber: 2, weight: 0, reps: 10,
-                                isCompleted: false
-                            ),
-                        ],
-                        description: "hold for 10sec"
-                    ),
-                    Exercise(
-                        id: 113,
-                        name: "Bird-Dog",
-                        sets: [
-                            ExerciseSet(
-                                id: 1131, setNumber: 1, weight: 0, reps: 10,
-                                isCompleted: false
-                            ),
-                            ExerciseSet(
-                                id: 1132, setNumber: 2, weight: 0, reps: 10,
-                                isCompleted: false
-                            ),
-                        ],
-                        description: "reps per side"
-                    ),
-                    Exercise(
-                        id: 114,
-                        name: "Standing Good Mornings",
-                        sets: [
-                            ExerciseSet(
-                                id: 1141, setNumber: 1, weight: 0, reps: 10,
-                                isCompleted: false
-                            )
-                        ],
-                        description: "Bodyweight"
-                    ),
-                ]
-            ),
-            WorkoutGroup(
-                id: 12,
-                name: "Main Lift",
-                exercises: [
-                    Exercise(
-                        id: 121,
-                        name: "Deadlift",
-                        sets: [
-                            ExerciseSet(
-                                id: 1211, setNumber: 1, weight: 150, reps: 3,
-                                isCompleted: false
-                            ),
-                            ExerciseSet(
-                                id: 1212, setNumber: 2, weight: 160, reps: 3,
-                                isCompleted: false
-                            ),
-                            ExerciseSet(
-                                id: 1213, setNumber: 3, weight: 160, reps: 3,
-                                isCompleted: false
-                            ),
-                            ExerciseSet(
-                                id: 1214, setNumber: 4, weight: 165, reps: 1,
-                                isCompleted: false
-                            ),
-                            ExerciseSet(
-                                id: 1215, setNumber: 5, weight: 165, reps: 1,
-                                isCompleted: false
-                            ),
-                            ExerciseSet(
-                                id: 1216, setNumber: 6, weight: 165, reps: 1,
-                                isCompleted: false
-                            ),
-                        ],
-                        description: "Slow and steady"
-                    )
-                ]
-            ),
-            WorkoutGroup(
-                id: 3,
-                name: "Accessories",
-                exercises: [
-                    Exercise(
-                        id: 122,
-                        name: "Deficit Deadlift",
-                        sets: [
-                            ExerciseSet(
-                                id: 1221, setNumber: 1, weight: 100, reps: 3,
-                                isCompleted: false
-                            ),
-                            ExerciseSet(
-                                id: 1222, setNumber: 2, weight: 110, reps: 3,
-                                isCompleted: false),
-                            ExerciseSet(
-                                id: 1223, setNumber: 3, weight: 120, reps: 3,
-                                isCompleted: false),
-                            ExerciseSet(
-                                id: 1224, setNumber: 4, weight: 130, reps: 3,
-                                isCompleted: false),
-                        ],
-                        description: "Slow and steady"
-                    ),
-                    Exercise(
-                        id: 123,
-                        name: "Bendover Barbell Row",
-                        sets: [
-                            ExerciseSet(
-                                id: 1231, setNumber: 1, weight: 50, reps: 3,
-                                isCompleted: false
-                            ),
-                            ExerciseSet(
-                                id: 1232, setNumber: 2, weight: 60, reps: 3,
-                                isCompleted: false
-                            ),
-                            ExerciseSet(
-                                id: 1233, setNumber: 3, weight: 70, reps: 3,
-                                isCompleted: false
-                            ),
-                            ExerciseSet(
-                                id: 1234, setNumber: 4, weight: 70, reps: 3,
-                                isCompleted: false
-                            ),
-                        ],
-                        description: "Slow and steady"
-                    ),
-                    Exercise(
-                        id: 124,
-                        name: "Strict Military Press",
-                        sets: [
-                            ExerciseSet(
-                                id: 1241, setNumber: 1, weight: 40, reps: 6,
-                                isCompleted: false
-                            ),
-                            ExerciseSet(
-                                id: 1242, setNumber: 2, weight: 40, reps: 6,
-                                isCompleted: false
-                            ),
-                            ExerciseSet(
-                                id: 1243, setNumber: 3, weight: 40, reps: 6,
-                                isCompleted: false
-                            ),
-                        ],
-                        description: "Slow and steady"
-                    ),
-                ]
-            ),
-        ]
-    )
-
-    WorkoutView(workout: deadliftWorkout)
+    NavigationView {
+        WorkoutView(workout: deadliftWorkout)
+    }
 }

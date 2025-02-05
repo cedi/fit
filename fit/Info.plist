@@ -2,25 +2,32 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>UIAppFonts</key>
+	<array>
+		<string>Outfit-VariableFont_wght.ttf</string>
+	</array>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.birkensports.fit</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>LiveActivities</string>
 			</array>
-			<key>CFBundleURLName</key>
-			<string>com.birkensports.fit</string>
 		</dict>
 	</array>
-	<key>NSSupportsLiveActivities</key>
-	<true/>
+	<key>INIntentsSupported</key>
+	<array>
+		<string>CompleteSetIntent</string>
+	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
 		<string>fetch</string>
+		<string>processing</string>
 	</array>
 </dict>
 </plist>

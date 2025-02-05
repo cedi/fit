@@ -10,16 +10,6 @@ import SwiftUI
 import UserNotifications
 import ActivityKit
 
-struct LiveActivityAttributes: ActivityAttributes {
-    public struct ContentState: Codable, Hashable {
-        // Dynamic stateful properties about your activity go here!
-        var emoji: String
-    }
-
-    // Fixed non-changing properties about your activity go here!
-    var name: String
-}
-
 struct HomeView: View {
     @StateObject var notificationService = NotificationService()
 
@@ -39,7 +29,7 @@ struct HomeView: View {
             .padding()
 
             Button("Start Live Activity") {
-                createActivity()
+                //createActivity()
             }
 
             Stepper(
@@ -69,21 +59,6 @@ struct HomeView: View {
         )
         .padding()
     }
-
-    func createActivity() {
-            let attributes = LiveActivityAttributes(name: "Fuck Yeah")
-            let contentState = LiveActivityAttributes.ContentState(
-                emoji: "🛒"
-            )
-            do {
-                let _ = try Activity<LiveActivityAttributes>.request(
-                    attributes: attributes,
-                    contentState: contentState,
-                    pushType: .token)
-            } catch (let error) {
-                print(error.localizedDescription)
-            }
-        }
 }
 
 

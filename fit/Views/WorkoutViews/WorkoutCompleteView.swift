@@ -5,6 +5,8 @@
 //  Created by Cedric Kienzler on 15.01.25.
 //
 
+import HealthKit
+import SharedModels
 import SwiftUI
 
 struct SetRowView: View {
@@ -46,7 +48,7 @@ struct PercivedWorkoutFeedbackView: View {
                 Text(feedbackText(for: workoutFeedback))
                     .font(.subheadline)
                     .fontWeight(.semibold)
-                    .foregroundColor(.blue)
+                    .foregroundColor(Color.accentColor)
             }
 
             Slider(value: $workoutFeedback)
@@ -61,6 +63,7 @@ struct PercivedWorkoutFeedbackView: View {
         switch value {
         case 0.0..<0.3: return "Easy 😊"
         case 0.3..<0.7: return "Challenging 💪"
+        case 1.0: return "RIP 💀"
         default: return "Hardcore 🔥"
         }
     }
@@ -94,7 +97,7 @@ struct RecapStatsView: View {
 
             SummaryItem(
                 iconName: "scalemass",
-                value: "\(totalWeightLifted()) kg",
+                value: "\(workout.totalWeightLifted()) kg",
                 label: "Total Weight Lifted")
 
             if workout.newPRCount() > 0 {
@@ -116,14 +119,6 @@ struct RecapStatsView: View {
 
     private func countSets() -> Int {
         workout.workout.flatMap { $0.exercises }.flatMap { $0.sets }.count
-    }
-
-    private func totalWeightLifted() -> Int {
-        workout.workout
-            .flatMap { $0.exercises }
-            .flatMap { $0.sets }
-            .filter { $0.isCompleted } // Only include completed sets
-            .reduce(0) { $0 + ($1.weight * $1.reps) }
     }
 
     private var elapsedTime: TimeInterval {
@@ -270,6 +265,8 @@ struct WorkoutCompleteView: View {
     }
 
     private func done(workout: Binding<Workout>) {
+        saveToAppleHealth()
+
         var updatedWorkout = workout.wrappedValue
 
         // Reset all sets to isCompleted = false
@@ -294,6 +291,156 @@ struct WorkoutCompleteView: View {
         savedWorkout = true
         showView = false
     }
+
+    func fetchUserBodyWeight() -> Double {
+        guard
+            let bodyWeightType = HKObjectType.quantityType(
+                forIdentifier: .bodyMass)
+        else {
+            return 0.0
+        }
+
+        let semaphore = DispatchSemaphore(value: 0)
+        var weightInKg: Double = 0.0  // Initialize with a default value
+
+        let query = HKSampleQuery(
+            sampleType: bodyWeightType,
+            predicate: nil,
+            limit: 1,
+            sortDescriptors: [
+                NSSortDescriptor(
+                    key: HKSampleSortIdentifierStartDate, ascending: false)
+            ]
+        ) { _, samples, _ in
+            if let sample = samples?.first as? HKQuantitySample {
+                weightInKg = sample.quantity.doubleValue(
+                    for: HKUnit.gramUnit(with: .kilo))
+            }
+            semaphore.signal()
+        }
+
+        HKHealthStore().execute(query)
+        semaphore.wait()  // Block the thread until the query completes
+
+        return weightInKg
+    }
+
+    private func intensityMET() -> Double {
+        switch workoutFeedback {
+        case 0.0..<0.3: return 5.75
+        case 0.3..<0.7: return 6.0
+        case 1.0: return 6.5
+        default: return 6.25
+        }
+    }
+
+    private func workoutDurationInMinutes() -> Double {
+        guard let endTime = workout.endTime, let startTime = workout.startTime
+        else {
+            return 0
+        }
+        return endTime.timeIntervalSince(startTime) / 60.0  // Convert seconds to minutes
+    }
+
+    private func calculateCaloriesBurned(durationInMinutes: Double) -> Double {
+        return intensityMET() * fetchUserBodyWeight() * durationInMinutes
+    }
+
+    private func saveToAppleHealth() {
+
+        let duration = workoutDurationInMinutes()
+
+        // Calculate calories burned using MET formula
+        let caloriesBurned = calculateCaloriesBurned(
+            durationInMinutes: duration)
+
+        // Add custom notes as metadata
+        let metadata: [String: Any] = [
+            "totalWeight": workout.totalWeightLifted(),
+            "trainingSummary": workout.name,
+        ]
+
+        // Ensure we have valid start and end times
+        let startDate = workout.startTime ?? Date()
+        let endDate = workout.endTime ?? Date().addingTimeInterval(5 * 60)
+
+        guard endDate > startDate else {
+            print("End date must be later than start date.")
+            return
+        }
+
+        // Create a HealthKit store and workout builder
+        let healthStore = HKHealthStore()
+        let workoutConfiguration = HKWorkoutConfiguration()
+        workoutConfiguration.activityType = .other
+
+        let builder = HKWorkoutBuilder(
+            healthStore: healthStore, configuration: workoutConfiguration,
+            device: .local())
+
+        // Manually add the burned calories
+        let burnedCaloriesQuantity = HKQuantity(
+            unit: .kilocalorie(), doubleValue: caloriesBurned)
+
+        let activeEnergyBurnedType = HKQuantityType.quantityType(
+            forIdentifier: .activeEnergyBurned
+        )!
+
+        let sample = HKQuantitySample(
+            type: activeEnergyBurnedType,
+            quantity: burnedCaloriesQuantity,
+            start: startDate,
+            end: endDate//,
+            //metadata: metadata
+        )
+
+        builder.beginCollection(withStart: startDate) { (success, error) in
+          guard success else {
+            return
+          }
+        }
+
+        // Start the workout collection
+//        builder.beginCollection(withStart: startDate) { success, error in
+//            guard success else {
+//                print(
+//                    "Error starting workout collection: \(error?.localizedDescription ?? "Unknown error")"
+//                )
+//                return
+//            }
+
+
+//            builder.add([sample]) { success, error in
+//                guard success else {
+//                    print(
+//                        "Error adding energy burned sample: \(error?.localizedDescription ?? "Unknown error")"
+//                    )
+//                    return
+//                }
+//
+//                // End the collection
+//                builder.endCollection(withEnd: endDate) { success, error in
+//                    guard success else {
+//                        print(
+//                            "Error ending workout collection: \(error?.localizedDescription ?? "Unknown error")"
+//                        )
+//                        return
+//                    }
+//
+//                    // Save the workout
+//                    builder.finishWorkout { workout, error in
+//                        if let error = error {
+//                            print(
+//                                "Error saving workout: \(error.localizedDescription)"
+//                            )
+//                        } else {
+//                            print("Workout saved successfully with metadata!")
+//                        }
+//                    }
+//                }
+//            }
+//        }
+    }
 }
 
 struct SummaryItem: View {
@@ -305,7 +452,7 @@ struct SummaryItem: View {
         HStack {
             Image(systemName: iconName)
                 .font(.title)
-                .foregroundColor(.blue)
+                .foregroundColor(Color.accentColor)
             VStack(alignment: .leading) {
                 Text(value)
                     .font(.title2)

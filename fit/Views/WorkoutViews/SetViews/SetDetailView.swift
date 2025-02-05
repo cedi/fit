@@ -6,11 +6,12 @@
 //
 
 import SwiftUI
+import SharedModels
 
 struct SetDetailView: View {
     @Binding var sets: [ExerciseSet]
 
-    let completeSet: (Binding<ExerciseSet>, ScrollViewProxy, Bool) -> Void
+    let completeSet: (Binding<ExerciseSet>, Bool) -> Void
 
     let buttonWidth: CGFloat = 40
     let buttonSpacing: CGFloat = 4
@@ -20,7 +21,7 @@ struct SetDetailView: View {
 
     init(
         sets: Binding<[ExerciseSet]>,
-        completeSet: @escaping (Binding<ExerciseSet>, ScrollViewProxy, Bool) ->
+        completeSet: @escaping (Binding<ExerciseSet>, Bool) ->
             Void
     ) {
         self._sets = sets
@@ -38,7 +39,7 @@ struct SetDetailView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     ForEach($sets) { $set in
                         Button(action: {
-                            completeSet($set, proxy, false)
+                            completeSet($set, false)
                         }) {
                             HStack(alignment: .center, spacing: 4) {
                                 Image(
@@ -121,7 +122,7 @@ struct SetDetailView: View {
 
     SetDetailView(
         sets: .constant(sets),
-        completeSet: { set, _, _ in
+        completeSet: { set, _ in
             // Example action: Toggle completion
             if let index = sets.firstIndex(where: { $0.id == set.id }) {
                 withAnimation {

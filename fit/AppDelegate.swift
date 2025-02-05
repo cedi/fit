@@ -5,9 +5,9 @@
 //  Created by Cedric Kienzler on 17.01.25.
 //
 
-//  CustomAppDelegate.swift
 import SwiftUI
 import UserNotifications
+import FirebaseCore
 
 class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
     // This gives us access to the methods from our main app code inside the app delegate
@@ -24,6 +24,8 @@ class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
 
         // Setting the notification delegate
         UNUserNotificationCenter.current().delegate = self
+
+        FirebaseApp.configure()
 
         return true
     }

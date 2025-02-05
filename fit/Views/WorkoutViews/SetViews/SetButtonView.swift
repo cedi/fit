@@ -5,6 +5,7 @@
 //  Created by Cedric Kienzler on 10.01.25.
 //
 
+import SharedModels
 import SwiftUI
 
 struct SetButtonContentView: View {
@@ -26,13 +27,19 @@ struct SetButtonContentView: View {
 
             // Show checkmark if completed, otherwise show text
             if set.isCompleted || set.isSkipped {
-                Image(systemName: set.isSkipped ? "x.circle" : set.isPr ? "trophy.circle" : "checkmark.circle.fill")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 24, height: 24)
-                    .foregroundColor(
-                        set.isSkipped ? Color.red : set.isPr ? Color.yellow : Color.accentColor
-                    )
+                Image(
+                    systemName: set.isSkipped
+                        ? "x.circle"
+                        : set.isPr ? "trophy.circle" : "checkmark.circle.fill"
+                )
+                .resizable()
+                .scaledToFit()
+                .frame(width: 24, height: 24)
+                .foregroundColor(
+                    set.isSkipped
+                        ? Color.red
+                        : set.isPr ? Color.yellow : Color.accentColor
+                )
             } else {
                 VStack(spacing: 0) {
                     if set.weight == 0 {
@@ -53,7 +60,7 @@ struct SetButtonContentView: View {
 struct SetButtonsView: View {
     @Binding var sets: [ExerciseSet]
 
-    let completeSet: (Binding<ExerciseSet>, ScrollViewProxy, Bool) -> Void
+    let completeSet: (Binding<ExerciseSet>, Bool) -> Void
 
     let buttonWidth: CGFloat = 40
     let buttonSpacing: CGFloat = 4
@@ -64,7 +71,7 @@ struct SetButtonsView: View {
 
     init(
         sets: Binding<[ExerciseSet]>,
-        completeSet: @escaping (Binding<ExerciseSet>, ScrollViewProxy, Bool) ->
+        completeSet: @escaping (Binding<ExerciseSet>, Bool) ->
             Void
     ) {
         self._sets = sets
@@ -93,15 +100,15 @@ struct SetButtonsView: View {
                             set: $set, buttonWidth: self.buttonWidth
                         )
                         .onTapGesture(count: 2) {
-                            completeSet($set, proxy, true)
+                            completeSet($set, true)
                         }
                         .onTapGesture {
-                            completeSet($set, proxy, false)
+                            completeSet($set, false)
                         }
                         .simultaneousGesture(
                             LongPressGesture(minimumDuration: 0.5)
                                 .onEnded { _ in
-                                    completeSet($set, proxy, true)
+                                    completeSet($set, true)
                                 }
                         )
                         .background(Color.accentColor.opacity(0.2))
@@ -111,9 +118,31 @@ struct SetButtonsView: View {
                         .id(set.id)
                     }
                 }
+                .onChange(of: sets) {
+                    scrollToNextIncompleteSet(proxy: proxy)
+                }
             }
         }
         .frame(maxWidth: setsMaxWidth)
+    }
+
+    private func scrollToNextIncompleteSet(proxy: ScrollViewProxy?) {
+        guard
+            let nextIncompleteSet = sets.first(where: {
+                !$0.isCompleted && !$0.isSkipped
+            })
+        else {
+            return
+        }
+
+        scrollToSet(nextIncompleteSet, proxy: proxy)
+    }
+
+    private func scrollToSet(_ set: ExerciseSet, proxy: ScrollViewProxy?) {
+        guard let proxy = proxy else { return }
+        withAnimation {
+            proxy.scrollTo(set.id, anchor: .center)
+        }
     }
 
 }
@@ -132,7 +161,7 @@ struct SetButtonsView: View {
 
     SetButtonsView(
         sets: .constant(sets),
-        completeSet: { set, _, _ in
+        completeSet: { set, _ in
             // Example action: Toggle completion
             if let index = sets.firstIndex(where: { $0.id == set.id }) {
                 withAnimation {
