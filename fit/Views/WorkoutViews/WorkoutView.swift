@@ -54,7 +54,8 @@ struct WorkoutListView: View {
                             .swipeActions(
                                 edge: .leading, allowsFullSwipe: true
                             ) {
-                                Button(role: .cancel) {} label: {
+                                Button(role: .cancel) {
+                                } label: {
                                     Label("PR", systemImage: "trophy")
                                 }
                                 .tint(Color.orange)
@@ -62,15 +63,21 @@ struct WorkoutListView: View {
                             .swipeActions(
                                 edge: .leading, allowsFullSwipe: false
                             ) {
-                                Button(role: .cancel) {} label: {
-                                    Label("Note", systemImage: "pencil.and.list.clipboard")
+                                Button(role: .cancel) {
+                                } label: {
+                                    Label(
+                                        "Note",
+                                        systemImage: "pencil.and.list.clipboard"
+                                    )
                                 }
                             }
                             .swipeActions(
                                 edge: .trailing, allowsFullSwipe: true
                             ) {
-                                Button(role: .cancel) {} label: {
-                                    Label("Done", systemImage: "checkmark.circle")
+                                Button(role: .cancel) {
+                                } label: {
+                                    Label(
+                                        "Done", systemImage: "checkmark.circle")
                                 }
                                 .tint(Color.accentColor)
                             }

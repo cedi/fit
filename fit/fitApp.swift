@@ -5,9 +5,9 @@
 //  Created by Cedric Kienzler on 09.12.24.
 //
 
+import FirebaseCore
 import SwiftData
 import SwiftUI
-import FirebaseCore
 
 @main
 struct fitApp: App {
@@ -17,15 +17,6 @@ struct fitApp: App {
 
     init() {
         //registerForNotification()
-        let healthManager = HealthManager()
-
-        healthManager.requestAuthorization { success, error in
-            if !success {
-                if let error = error {
-                    print("HealthKit authorization failed: \(error.localizedDescription)")
-                }
-            }
-        }
     }
 
     func registerForNotification() {
@@ -44,14 +35,12 @@ struct fitApp: App {
 
     var body: some Scene {
         WindowGroup {
-            NavigationView {
-                MainView()
-                    .dynamicTypeSize(.xSmall ... .xxxLarge)
-                    .onAppear(perform: {
-                        // this makes sure that we are setting the app to the app delegate as soon as the main view appears
-                        appDelegate.app = self
-                    })
-            }
+            MainView()
+                .dynamicTypeSize(.xSmall ... .xxxLarge)
+                .onAppear(perform: {
+                    // this makes sure that we are setting the app to the app delegate as soon as the main view appears
+                    appDelegate.app = self
+                })
         }
     }
 }

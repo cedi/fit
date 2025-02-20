@@ -8,7 +8,7 @@
 import SwiftUI
 
 enum FocusedField {
-    case email, password
+    case email, password, firstname, lastname, bio
 }
 
 struct AppIconView: View {

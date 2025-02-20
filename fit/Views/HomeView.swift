@@ -5,10 +5,10 @@
 //  Created by Cedric Kienzler on 09.12.24.
 //
 
+import ActivityKit
 import Combine
 import SwiftUI
 import UserNotifications
-import ActivityKit
 
 struct HomeView: View {
     @StateObject var notificationService = NotificationService()
@@ -61,8 +61,9 @@ struct HomeView: View {
     }
 }
 
-
-final class NotificationService: NSObject, ObservableObject, UNUserNotificationCenterDelegate {
+final class NotificationService: NSObject, ObservableObject,
+    UNUserNotificationCenterDelegate
+{
     @Published var showSettingsPage = false
     @Published var badgeNumber = 0
     var cancellables = Set<AnyCancellable>()
@@ -94,13 +95,16 @@ final class NotificationService: NSObject, ObservableObject, UNUserNotificationC
                 ]
             )
 
-
         } catch {
             print("Failed to request notification authorization: \(error)")
         }
 
-        let testNotificationCategory = UNNotificationCategory(identifier: "testNotificationCategory", actions: [], intentIdentifiers: [], options: [])
-        UNUserNotificationCenter.current().setNotificationCategories([testNotificationCategory])
+        let testNotificationCategory = UNNotificationCategory(
+            identifier: "testNotificationCategory", actions: [],
+            intentIdentifiers: [], options: [])
+        UNUserNotificationCenter.current().setNotificationCategories([
+            testNotificationCategory
+        ])
     }
 
     func userNotificationCenter(
@@ -111,20 +115,20 @@ final class NotificationService: NSObject, ObservableObject, UNUserNotificationC
     }
 
     func userNotificationCenter(
-            _ center: UNUserNotificationCenter,
-            didReceive response: UNNotificationResponse
-        ) async {
-            if response.actionIdentifier == "TICK_OFF_SET" {
-                // Logic to handle ticking off the set
-                print("Set ticked off!")
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse
+    ) async {
+        if response.actionIdentifier == "TICK_OFF_SET" {
+            // Logic to handle ticking off the set
+            print("Set ticked off!")
 
-                // Notify about rest timer
-                scheduleRestTimerNotification(restTime: 3)
-            } else if response.actionIdentifier == "START_REST_TIMER" {
-                // Logic to start the rest timer
-                print("Rest timer started!")
-            }
+            // Notify about rest timer
+            scheduleRestTimerNotification(restTime: 3)
+        } else if response.actionIdentifier == "START_REST_TIMER" {
+            // Logic to start the rest timer
+            print("Rest timer started!")
         }
+    }
 
     func scheduleRestTimerNotification(restTime: Int) {
         let content = UNMutableNotificationContent()
@@ -133,7 +137,8 @@ final class NotificationService: NSObject, ObservableObject, UNUserNotificationC
         content.sound = .default
 
         // Trigger after the rest period
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: TimeInterval(restTime * 60), repeats: false)
+        let trigger = UNTimeIntervalNotificationTrigger(
+            timeInterval: TimeInterval(restTime * 60), repeats: false)
 
         let request = UNNotificationRequest(
             identifier: "REST_TIMER_NOTIFICATION",
@@ -144,7 +149,6 @@ final class NotificationService: NSObject, ObservableObject, UNUserNotificationC
         UNUserNotificationCenter.current().add(request)
     }
 }
-
 
 #Preview {
     HomeView()

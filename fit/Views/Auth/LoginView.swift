@@ -46,7 +46,8 @@ struct LoginView: View {
                         .overlay(
                             RoundedRectangle(cornerRadius: 10)
                                 .stroke(
-                                    viewModel.emailError.isEmpty ? Color.accentColor : Color.red,
+                                    viewModel.emailError.isEmpty
+                                        ? Color.accentColor : Color.red,
                                     lineWidth: viewModel.email.isEmpty ? 0 : 2)  // Show a green border when active
                         )
                         .onSubmit {
@@ -79,8 +80,10 @@ struct LoginView: View {
                         .overlay(
                             RoundedRectangle(cornerRadius: 10)
                                 .stroke(
-                                    viewModel.passwordError.isEmpty ? Color.accentColor : Color.red,
-                                    lineWidth: viewModel.password.isEmpty ? 0 : 2)  // Show a green border when active
+                                    viewModel.passwordError.isEmpty
+                                        ? Color.accentColor : Color.red,
+                                    lineWidth: viewModel.password.isEmpty
+                                        ? 0 : 2)  // Show a green border when active
                         )
                         .onSubmit {
                             viewModel.login()

@@ -5,9 +5,10 @@
 //  Created by Cedric Kienzler on 04.02.25.
 //
 
-import Foundation
+import CryptoKit
 import FirebaseAuth
 import FirebaseFirestore
+import Foundation
 
 class SignupViewModel: ObservableObject {
     @Published var email: String = ""
@@ -16,6 +17,11 @@ class SignupViewModel: ObservableObject {
     @Published var emailError: String = ""
     @Published var passwordError: String = ""
     @Published var agreeToTermsError: Bool = false
+    @Published var firstNameError: String = ""
+    @Published var lastNameError: String = ""
+    @Published var signupError: String = ""
+
+    fileprivate var currentNonce: String?
 
     init() {}
 
@@ -24,63 +30,65 @@ class SignupViewModel: ObservableObject {
             return
         }
 
-        Auth.auth().createUser(withEmail: email, password: password) { [weak self] result, error in
-            guard let userId = result?.user.uid else {
+        Auth.auth().createUser(withEmail: email, password: password) {
+            [weak self] result, error in
+
+            guard let err = error else {
+                guard let userId = result?.user.uid else {
+                    return
+                }
+
+                self?.createUser(uid: userId)
                 return
             }
 
-            self?.insertUser(uid: userId)
+            if err.localizedDescription.contains("already in use") {
+                self?.emailError = err.localizedDescription
+            } else {
+                self?.signupError = err.localizedDescription
+            }
         }
     }
 
-    private func insertUser(uid: String) {
+    private func createUser(uid: String) {
         let newUser = User(
-            uid: uid,
             email: email,
-            joined: Date().timeIntervalSince1970
+            isOnboarded: false
         )
 
-        let db = Firestore.firestore()
+        do {
+            let db = Firestore.firestore()
 
-        db.collection("users")
-            .document(uid)
-            .setData(newUser.asDict())
+            try db.collection("users")
+                .document(uid)
+                .setData(from: newUser)
+        } catch {
+            print(error)
+        }
     }
 
     private func validate() -> Bool {
-        var anyErr: Bool = false;
+        emailError = ""
+        passwordError = ""
+        agreeToTermsError = false
+        firstNameError = ""
+        lastNameError = ""
 
         if email.trimmingCharacters(in: .whitespaces).isEmpty {
             emailError = "Please enter your email address"
-            anyErr = true
+        } else if !email.contains("@") || !email.contains(".") {
+            emailError = "Please enter a valid email address"
         }
 
         if password.trimmingCharacters(in: .whitespaces).isEmpty {
-            emailError = "Please enter your password"
-            anyErr = true
-        }
-
-        if !email.trimmingCharacters(in: .whitespaces).isEmpty && (!email.contains("@") || !email.contains(".")) {
-            emailError = "Please enter a valid email address"
-            anyErr = true
-        } else {
-            emailError = ""
-        }
-
-        if !password.trimmingCharacters(in: .whitespaces).isEmpty && password.count < 6 {
+            passwordError = "Please enter your password"
+        } else if password.count < 6 {
             passwordError = "Please choose a stronger password"
-            anyErr = true
-        } else {
-            passwordError = ""
         }
 
-        if !agreeToTerms {
-            agreeToTermsError = true
-            anyErr = true
-        } else {
-            agreeToTermsError = false
-        }
+        agreeToTermsError = !agreeToTerms
 
-        return !anyErr
+        return !agreeToTermsError && emailError.isEmpty && passwordError.isEmpty
+            && firstNameError.isEmpty && lastNameError.isEmpty
     }
 }

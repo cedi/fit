@@ -5,9 +5,9 @@
 //  Created by Cedric Kienzler on 17.01.25.
 //
 
+import FirebaseCore
 import SwiftUI
 import UserNotifications
-import FirebaseCore
 
 class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
     // This gives us access to the methods from our main app code inside the app delegate
@@ -76,4 +76,3 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         }
     }
 }
-

@@ -390,56 +390,55 @@ struct WorkoutCompleteView: View {
             type: activeEnergyBurnedType,
             quantity: burnedCaloriesQuantity,
             start: startDate,
-            end: endDate//,
-            //metadata: metadata
+            end: endDate  //,
+                //metadata: metadata
         )
 
         builder.beginCollection(withStart: startDate) { (success, error) in
-          guard success else {
-            return
-          }
+            guard success else {
+                return
+            }
         }
 
         // Start the workout collection
-//        builder.beginCollection(withStart: startDate) { success, error in
-//            guard success else {
-//                print(
-//                    "Error starting workout collection: \(error?.localizedDescription ?? "Unknown error")"
-//                )
-//                return
-//            }
+        //        builder.beginCollection(withStart: startDate) { success, error in
+        //            guard success else {
+        //                print(
+        //                    "Error starting workout collection: \(error?.localizedDescription ?? "Unknown error")"
+        //                )
+        //                return
+        //            }
 
-
-//            builder.add([sample]) { success, error in
-//                guard success else {
-//                    print(
-//                        "Error adding energy burned sample: \(error?.localizedDescription ?? "Unknown error")"
-//                    )
-//                    return
-//                }
-//
-//                // End the collection
-//                builder.endCollection(withEnd: endDate) { success, error in
-//                    guard success else {
-//                        print(
-//                            "Error ending workout collection: \(error?.localizedDescription ?? "Unknown error")"
-//                        )
-//                        return
-//                    }
-//
-//                    // Save the workout
-//                    builder.finishWorkout { workout, error in
-//                        if let error = error {
-//                            print(
-//                                "Error saving workout: \(error.localizedDescription)"
-//                            )
-//                        } else {
-//                            print("Workout saved successfully with metadata!")
-//                        }
-//                    }
-//                }
-//            }
-//        }
+        //            builder.add([sample]) { success, error in
+        //                guard success else {
+        //                    print(
+        //                        "Error adding energy burned sample: \(error?.localizedDescription ?? "Unknown error")"
+        //                    )
+        //                    return
+        //                }
+        //
+        //                // End the collection
+        //                builder.endCollection(withEnd: endDate) { success, error in
+        //                    guard success else {
+        //                        print(
+        //                            "Error ending workout collection: \(error?.localizedDescription ?? "Unknown error")"
+        //                        )
+        //                        return
+        //                    }
+        //
+        //                    // Save the workout
+        //                    builder.finishWorkout { workout, error in
+        //                        if let error = error {
+        //                            print(
+        //                                "Error saving workout: \(error.localizedDescription)"
+        //                            )
+        //                        } else {
+        //                            print("Workout saved successfully with metadata!")
+        //                        }
+        //                    }
+        //                }
+        //            }
+        //        }
     }
 }
 

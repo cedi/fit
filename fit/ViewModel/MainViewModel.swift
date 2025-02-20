@@ -6,23 +6,38 @@
 //
 
 import FirebaseAuth
+import FirebaseFirestore
 import Foundation
 
+@MainActor
 class MainViewViewModel: ObservableObject {
-    @Published var currentUid: String = ""
-    private var handler: AuthStateDidChangeListenerHandle?
+    @Published var isSignedIn: Bool = Auth.auth().currentUser != nil
+    @Published var profile: ProfileViewModel
+    @Published var isOnboarded: Bool = false
 
-    @MainActor
-    init() {
-        self.handler = Auth.auth().addStateDidChangeListener {
+    private var authListener: AuthStateDidChangeListenerHandle?
+
+    init(profile: ProfileViewModel) {
+        self.profile = profile
+
+        self.profile.$user
+            .compactMap { $0?.isOnboarded }
+            .assign(to: &$isOnboarded)
+
+        self.authListener = Auth.auth().addStateDidChangeListener {
             [weak self] _, user in
-            DispatchQueue.main.async {
-                self?.currentUid = user?.uid ?? ""
+            Task {
+                if user == nil {
+                    return
+                }
+
+                guard let strongSelf = self else {
+                    return
+                }
+
+                strongSelf.isSignedIn = Auth.auth().currentUser != nil
+                await strongSelf.profile.fetchUser()
             }
         }
-    }
-
-    public var isSignedIn: Bool {
-        return Auth.auth().currentUser != nil
     }
 }

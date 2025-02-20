@@ -87,40 +87,29 @@ struct WeekHeaderView: View {
 }
 
 struct TrainingPlanView: View {
-    @State var trainingPlan: [WorkoutWeek]
-    @State private var isEditing = false
+    @StateObject private var viewModel = TrainingPlanViewModel()
 
     var body: some View {
         List {
-            ForEach(trainingPlan.indices, id: \..self) { index in
+            ForEach(viewModel.trainingPlan.indices, id: \.self) { weekIndex in
                 Section(
                     header: WeekHeaderView(
-                        trainingPlan: $trainingPlan[index],
-                        isEditing: $isEditing
+                        trainingPlan: $viewModel.trainingPlan[weekIndex],
+                        isEditing: $viewModel.isEditing
                     )
                 ) {
-                    ForEach(trainingPlan[index].workouts) { workout in
-                        if isEditing {
+                    ForEach(viewModel.trainingPlan[weekIndex].workouts) {
+                        workout in
+                        if viewModel.isEditing {
                             HStack {
                                 Text(workout.name)
                                 Spacer()
                                 Button(action: {
-                                    // delete this one from the training plan
+                                    viewModel.deleteWorkout(
+                                        from: weekIndex, workout: workout)
                                 }) {
                                     Image(systemName: "minus.circle.fill")
-                                        .foregroundColor(Color.red)
-                                }
-                            }
-                            .swipeActions(
-                                edge: .trailing, allowsFullSwipe: true
-                            ) {
-                                if isEditing {
-                                    Button(role: .destructive) {
-                                        deleteWorkout(
-                                            from: index, workout: workout)
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
-                                    }
+                                        .foregroundColor(.red)
                                 }
                             }
                         } else {
@@ -131,10 +120,15 @@ struct TrainingPlanView: View {
                             }
                         }
                     }
-                    if isEditing {
-                        Button(action: {
-                            addWorkout(to: index)
-                        }) {
+                    .onMove { indices, destination in
+                        viewModel.moveWorkout(
+                            from: indices, to: destination, weekIndex: weekIndex
+                        )
+                    }
+
+                    if viewModel.isEditing {
+                        Button(action: { viewModel.addWorkout(to: weekIndex) })
+                        {
                             HStack {
                                 Image(systemName: "plus")
                                 Text("Add Workout")
@@ -144,12 +138,9 @@ struct TrainingPlanView: View {
                     }
                 }
             }
-            //.onDelete(perform: isEditing ? deleteWeek : nil) // error
 
-            if isEditing {
-                Button(action: {
-                    addWeek()
-                }) {
+            if viewModel.isEditing {
+                Button(action: viewModel.addWeek) {
                     HStack {
                         Image(systemName: "plus")
                         Text("Add Week")
@@ -160,41 +151,24 @@ struct TrainingPlanView: View {
             }
         }
         .listStyle(InsetGroupedListStyle())
+        .environment(\.editMode, $viewModel.editMode)
         .navigationTitle("Training Plan")
-        .navigationBarItems(
-            trailing: HStack {
-                Button(action: { isEditing.toggle() }) {
-                    Text(isEditing ? "Save" : "Edit")
-                }
-            }
-        )
+        .navigationBarItems(trailing: editButton)
     }
 
-    func addWeek() {
-        let newWeek = WorkoutWeek(
-            number: trainingPlan.count + 1, workouts: [], repeatCount: 1)
-        trainingPlan.append(newWeek)
-    }
-
-    func deleteWeek(at offsets: IndexSet) {
-        trainingPlan.remove(atOffsets: offsets)
-    }
-
-    func addWorkout(to weekIndex: Int) {
-        trainingPlan[weekIndex].workouts.append(deadliftWorkout)
-    }
-
-    func deleteWorkout(from weekIndex: Int, workout: Workout) {
-        if let workoutIndex = trainingPlan[weekIndex].workouts.firstIndex(
-            of: workout)
-        {
-            trainingPlan[weekIndex].workouts.remove(at: workoutIndex)
+    // MARK: - Unified Edit Button
+    private var editButton: some View {
+        Button(action: {
+            viewModel.isEditing.toggle()
+            viewModel.editMode = viewModel.isEditing ? .active : .inactive
+        }) {
+            Text(viewModel.isEditing ? "Done" : "Edit")
         }
     }
 }
 
 #Preview {
     NavigationView {
-        TrainingPlanView(trainingPlan: trainingPlan)
+        TrainingPlanView()
     }
 }

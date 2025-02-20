@@ -9,8 +9,12 @@ import SharedModels
 
 @MainActor
 let trainingPlan: [WorkoutWeek] = [
-    WorkoutWeek(number: 1, name: "RAW Strength", workouts: [deadliftWorkout, deadliftWorkout], repeatCount: 1),
-    WorkoutWeek(number: 2, name: "Hypertrophy", workouts: [deadliftWorkout, deadliftWorkout], repeatCount: 1)
+    WorkoutWeek(
+        number: 1, name: "RAW Strength",
+        workouts: [deadliftWorkout, deadliftWorkout], repeatCount: 1),
+    WorkoutWeek(
+        number: 2, name: "Hypertrophy",
+        workouts: [deadliftWorkout, deadliftWorkout], repeatCount: 1),
 ]
 
 @MainActor

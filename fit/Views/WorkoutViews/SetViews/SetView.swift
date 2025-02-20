@@ -5,8 +5,8 @@
 //  Created by Cedric Kienzler on 10.01.25.
 //
 
-import SwiftUI
 import SharedModels
+import SwiftUI
 
 struct SetView: View {
     @Binding var sets: [ExerciseSet]
@@ -60,12 +60,12 @@ struct SetView: View {
     SetView(
         sets: .constant(sets),
         detailView: .constant(false),
-        completeSet: {_,_ in}
+        completeSet: { _, _ in }
     )
 
     SetView(
         sets: .constant(sets),
         detailView: .constant(true),
-        completeSet: {_,_ in}
+        completeSet: { _, _ in }
     )
 }

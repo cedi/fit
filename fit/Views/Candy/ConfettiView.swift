@@ -113,7 +113,7 @@ struct ConfettiPreviewView: View {
         .overlay(
             exerciseComplete ? ConfettiView().allowsHitTesting(false) : nil
         )
-        .coordinateSpace(name: "confettiArea") // Define a named coordinate space
+        .coordinateSpace(name: "confettiArea")  // Define a named coordinate space
     }
 }
 

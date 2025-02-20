@@ -8,9 +8,9 @@
 import SwiftUI
 
 struct SignUpView: View {
+    @Environment(\.dismiss) private var dismiss
     @StateObject var viewModel = SignupViewModel()
     @State var agreeToTerms: Bool = false
-
     @FocusState private var focusedField: FocusedField?
 
     var body: some View {
@@ -26,7 +26,7 @@ struct SignUpView: View {
             Spacer()
 
             // Input Fields
-            VStack(spacing: 15) {
+            VStack(alignment: .leading, spacing: 15) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Enter your email")
                         .font(.caption)
@@ -53,7 +53,7 @@ struct SignUpView: View {
                                     lineWidth: viewModel.email.isEmpty ? 0 : 2)  // Show a green border when active
                         )
                         .onSubmit {
-                            focusedField = .password
+                            focusedField = .firstname
                         }
 
                     if !viewModel.emailError.isEmpty {
@@ -100,6 +100,48 @@ struct SignUpView: View {
                 }
             }
 
+            Spacer()
+
+            HStack {
+                Divider()
+                    .frame(maxWidth: .infinity, maxHeight: 1)
+                    .background(Color.gray.opacity(0.5))
+
+                Text("or")
+                    .font(.footnote)
+                    .foregroundColor(.gray.opacity(0.5))
+                    .padding(.horizontal, 8)
+
+                Divider()
+                    .frame(maxWidth: .infinity, maxHeight: 1)
+                    .background(Color.gray.opacity(0.5))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+
+            Button(action: {}) {
+                HStack {
+                    Image(systemName: "apple.logo")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 20, height: 20)
+                        .foregroundColor(Color.primary)
+
+                    Text("Sign up with Apple")
+                        .font(.headline)
+                        .foregroundColor(Color.primary)
+                }
+                .padding()
+                .frame(maxWidth: .infinity)
+                .background(Color(uiColor: .systemGray5))  // Adapts to light/dark mode
+                .cornerRadius(10)
+            }
+            .buttonStyle(PlainButtonStyle())
+            .shadow(radius: 2)
+            .padding(.horizontal, 20)
+
+            Spacer()
+
             // Terms and Conditions
             Button(action: {
                 viewModel.agreeToTerms.toggle()
@@ -124,8 +166,6 @@ struct SignUpView: View {
             .buttonStyle(.plain)  // Ensures it looks like a native checkbox
             .padding(.horizontal)
 
-            Spacer()
-
             // Sign-Up Button
             Button(action: {
                 viewModel.signup()
@@ -140,10 +180,18 @@ struct SignUpView: View {
                     .padding(.horizontal)
             }
 
+            if !viewModel.signupError.isEmpty {
+                Text(viewModel.signupError)
+                    .foregroundColor(.red)
+                    .font(.footnote)
+            }
+
             // Already have an account?
             HStack {
                 Text("Already have an account?")
-                NavigationLink(destination: LoginView()) {
+                Button(action: {
+                    dismiss()
+                }) {
                     Text("Log in")
                         .foregroundColor(Color.accentColor)
                         .fontWeight(.semibold)

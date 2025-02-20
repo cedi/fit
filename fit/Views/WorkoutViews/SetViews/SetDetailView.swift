@@ -5,8 +5,8 @@
 //  Created by Cedric Kienzler on 10.01.25.
 //
 
-import SwiftUI
 import SharedModels
+import SwiftUI
 
 struct SetDetailView: View {
     @Binding var sets: [ExerciseSet]

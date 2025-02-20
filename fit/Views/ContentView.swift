@@ -16,35 +16,49 @@ struct ContentView: View {
         case home, session, plan, settings
     }
 
+    private var profileViewModel: ProfileViewModel
+
+    init(profile: ProfileViewModel = .init()) {
+        self.profileViewModel = profile
+    }
+
     var body: some View {
         TabView {
-            HomeView()
-                .tabItem {
-                    Image(systemName: "house")
-                    Text("Home")
-                }
-                .tag(Tab.home)
+            NavigationView {
+                HomeView()
+            }
+            .tabItem {
+                Image(systemName: "house")
+                Text("Home")
+            }
+            .tag(Tab.home)
 
-            WorkoutView(workout: deadliftWorkout)
-                .tabItem {
-                    Image(systemName: "figure.strengthtraining.traditional")
-                    Text("Workout")
-                }
-                .tag(Tab.session)
+            NavigationView {
+                WorkoutView(workout: deadliftWorkout)
+            }
+            .tabItem {
+                Image(systemName: "figure.strengthtraining.traditional")
+                Text("Workout")
+            }
+            .tag(Tab.session)
 
-            TrainingPlanView(trainingPlan: trainingPlan)
-                .tabItem {
-                    Image(systemName: "list.triangle")
-                    Text("Trainings Plan")
-                }
-                .tag(Tab.plan)
+            NavigationView {
+                TrainingPlanView()
+            }
+            .tabItem {
+                Image(systemName: "list.triangle")
+                Text("Trainings Plan")
+            }
+            .tag(Tab.plan)
 
-            SettingsView()
-                .tabItem {
-                    Image(systemName: "gear")
-                    Text("Settings")
-                }
-                .tag(Tab.settings)
+            NavigationView {
+                SettingsView(profile: profileViewModel)
+            }
+            .tabItem {
+                Image(systemName: "gear")
+                Text("Settings")
+            }
+            .tag(Tab.settings)
         }
     }
 }

@@ -5,8 +5,8 @@
 //  Created by Cedric Kienzler on 09.12.24.
 //
 
-import SwiftUI
 import SharedModels
+import SwiftUI
 
 struct WorkoutExerciseView: View {
     @State private var expanded: Bool = false
@@ -157,7 +157,7 @@ struct WorkoutExerciseView: View {
         exercise: .constant(exercise),
         workoutStarted: .constant(true),
         isCurrentExercise: true,
-        completeSet: {_,_ in}
+        completeSet: { _, _ in }
     )
     .frame(height: 100)
 }
