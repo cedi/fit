@@ -49,8 +49,8 @@ struct SignUpView: View {
                             RoundedRectangle(cornerRadius: 10)
                                 .stroke(
                                     viewModel.emailError.isEmpty
-                                        ? Color.accentColor : Color.red,
-                                    lineWidth: viewModel.email.isEmpty ? 0 : 2)  // Show a green border when active
+                                        ? Color("AppIconColor") : Color.red,
+                                    lineWidth: viewModel.email.isEmpty ? 0 : 1)  // Show a green border when active
                         )
                         .onSubmit {
                             focusedField = .firstname
@@ -84,9 +84,9 @@ struct SignUpView: View {
                             RoundedRectangle(cornerRadius: 10)
                                 .stroke(
                                     viewModel.passwordError.isEmpty
-                                        ? Color.accentColor : Color.red,
+                                        ? Color("AppIconColor") : Color.red,
                                     lineWidth: viewModel.password.isEmpty
-                                        ? 0 : 2)  // Show a green border when active
+                                        ? 0 : 1)  // Show a green border when active
                         )
                         .onSubmit {
                             viewModel.signup()
@@ -152,7 +152,7 @@ struct SignUpView: View {
                             ? "checkmark.square.fill" : "square"
                     )
                     .foregroundColor(
-                        viewModel.agreeToTerms ? Color.accentColor : .gray
+                        viewModel.agreeToTerms ? Color("AppIconColor") : .gray
                     )
                     .font(.system(size: 20))
 
@@ -175,7 +175,7 @@ struct SignUpView: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.accentColor)
+                    .background(Color("AppIconColor"))
                     .cornerRadius(10)
                     .padding(.horizontal)
             }
@@ -193,7 +193,7 @@ struct SignUpView: View {
                     dismiss()
                 }) {
                     Text("Log in")
-                        .foregroundColor(Color.accentColor)
+                        .foregroundColor(Color("AppIconColor"))
                         .fontWeight(.semibold)
                 }
             }

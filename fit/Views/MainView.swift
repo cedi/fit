@@ -21,20 +21,28 @@ struct MainView: View {
 
     var body: some View {
         Group {
-            if viewModel.isSignedIn {
+            if !viewModel.isLoaded {
+                SplashScreenView()
+            } else if !viewModel.isSignedIn {
+                NavigationView {
+                    LoginView()
+                }
+            } else {
                 if !viewModel.isOnboarded {
                     OnboardingFlowView(profile: viewModel.profile)
                 } else {
                     ContentView(profile: profileViewModel)
                 }
-            } else {
-                NavigationView {
-                    LoginView()
-                }
             }
         }
         .onChange(of: viewModel.isOnboarded) {
             print("User has completed onboarding, switching to ContentView")
+        }
+        .onChange(of: viewModel.isLoaded) {
+            print("User has loaded")
+        }
+        .onChange(of: viewModel.isSignedIn) {
+            print("User has changed")
         }
     }
 }

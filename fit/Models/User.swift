@@ -15,13 +15,14 @@ struct UserNotifications: Codable {
 
 struct User: Codable {
     let email: String
-    @ServerTimestamp var createdAt: Date?
-    @ServerTimestamp var lastUpdatedAt: Date?
     var firstName: String?
     var lastName: String?
     var bio: String?
     var isOnboarded: Bool?
     var notifications: UserNotifications?
+
+    @ServerTimestamp var createdAt: Date?
+    @ServerTimestamp var lastUpdatedAt: Date?
 
     private func formattedDateString(from date: Date) -> String {
         let formatter = DateFormatter()

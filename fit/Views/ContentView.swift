@@ -33,17 +33,17 @@ struct ContentView: View {
             }
             .tag(Tab.home)
 
-            NavigationView {
-                WorkoutView(workout: deadliftWorkout)
-            }
-            .tabItem {
-                Image(systemName: "figure.strengthtraining.traditional")
-                Text("Workout")
-            }
+//            NavigationView {
+//                WorkoutView(workout: deadliftWorkout)
+//            }
+//            .tabItem {
+//                Image(systemName: "figure.strengthtraining.traditional")
+//                Text("Workout")
+//            }
             .tag(Tab.session)
 
             NavigationView {
-                TrainingPlanView()
+                TrainingPlanListView()
             }
             .tabItem {
                 Image(systemName: "list.triangle")

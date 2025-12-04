@@ -41,7 +41,7 @@ struct WorkoutExerciseView: View {
 
                     Text(exercise.name)
                 }
-                .font(.headline)
+//                .font(.headline)
 
                 if !expanded {
                     // Sets right aligned

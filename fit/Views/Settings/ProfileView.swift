@@ -24,7 +24,6 @@ struct ProfileView: View {
 
     var body: some View {
         VStack(spacing: 20) {
-
             VStack(spacing: 5) {
                 Image(systemName: "person.circle.fill")  // Placeholder for profile image
                     .resizable()
@@ -40,13 +39,7 @@ struct ProfileView: View {
 
             // User fields
             VStack(alignment: .leading, spacing: 15) {
-                VStack(alignment: .leading, spacing: 4) {
-
-                    Text("First Name")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                        .fontWeight(.medium)
-
+                SectionView(title: "First Name") {
                     TextField(
                         "First Name",
                         text: Binding(
@@ -69,7 +62,7 @@ struct ProfileView: View {
                                 viewModel.firstNameError.isEmpty
                                     ? Color.accentColor : Color.red,
                                 lineWidth: (viewModel.user?.firstName?.isEmpty
-                                    == false) ? 2 : 0
+                                    == false) ? 1 : 0
                             )
                     )
                     .onSubmit {
@@ -83,12 +76,7 @@ struct ProfileView: View {
                     }
                 }
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Last Name")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                        .fontWeight(.medium)
-
+                SectionView(title: "Last Name") {
                     TextField(
                         "Last Name",
                         text: Binding(
@@ -111,7 +99,7 @@ struct ProfileView: View {
                                 viewModel.lastNameError.isEmpty
                                     ? Color.accentColor : Color.red,
                                 lineWidth: (viewModel.user?.lastName?.isEmpty
-                                    == false) ? 2 : 0
+                                    == false) ? 1 : 0
                             )
                     )
                     .onSubmit {
@@ -125,12 +113,7 @@ struct ProfileView: View {
                     }
                 }
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Bio")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                        .fontWeight(.medium)
-
+                SectionView(title: "Bio") {
                     ZStack(alignment: .topLeading) {
                         RoundedRectangle(cornerRadius: 10)
                             .fill(Color(.systemGray5).opacity(0.3))
@@ -164,7 +147,7 @@ struct ProfileView: View {
                                 viewModel.bioError.isEmpty
                                     ? Color.accentColor : Color.red,
                                 lineWidth: (viewModel.user?.bio?.isEmpty
-                                    == false) ? 2 : 0
+                                    == false) ? 1 : 0
                             )
                     )
 

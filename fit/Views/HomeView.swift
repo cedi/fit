@@ -10,143 +10,148 @@ import Combine
 import SwiftUI
 import UserNotifications
 
-struct HomeView: View {
-    @StateObject var notificationService = NotificationService()
+struct TrainingCalendarView: View {
+    let workoutDates: [Date]
+    @State private var selectedDate = Date()
 
     var body: some View {
-        VStack(spacing: 16) {
-            Text("Welcome to Notifications Demo")
+        VStack(alignment: .leading) {
+            Text("Training Calendar")
                 .font(.headline)
+                .padding(.bottom, 5)
 
-            Button("Request Permission") {
+            DatePicker("Select Date", selection: $selectedDate, displayedComponents: .date)
+                .datePickerStyle(GraphicalDatePickerStyle())
+                .frame(maxWidth: .infinity)
+                .background(RoundedRectangle(cornerRadius: 12).fill(Color(UIColor.systemGray6)))
+                .padding(.horizontal)
 
-                Task {
-                    await notificationService
-                        .requestPushNotificationAuthorization()
-                }
+            if workoutDates.contains { Calendar.current.isDate($0, inSameDayAs: selectedDate) } {
+                Text("✅ Trained on this day!")
+                    .font(.footnote)
+                    .foregroundColor(.green)
+                    .padding(.top, 5)
+            } else {
+                Text("🚀 Rest day or no recorded workout.")
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+                    .padding(.top, 5)
             }
-            .buttonStyle(.borderedProminent)
-            .padding()
-
-            Button("Start Live Activity") {
-                //createActivity()
-            }
-
-            Stepper(
-                "Badge Number \(notificationService.badgeNumber != 0 ? notificationService.badgeNumber.description : "")",
-                value: $notificationService.badgeNumber, in: 0...Int.max
-            )
-
-            .padding()
-            .background(Color.blue)
-            .foregroundColor(.white)
-            .cornerRadius(8)
         }
-        .fullScreenCover(
-            isPresented: $notificationService.showSettingsPage,
-            content: {
-                // your settings page here
-                VStack {
-                    Text("Settings Page").font(.title)
-                    Text("All your settings here").font(.subheadline)
-                    Button("Dismiss") {
-                        notificationService.showSettingsPage = false
-                    }
-                    .padding()
-                    .buttonStyle(.borderedProminent)
-                }
-            }
-        )
+    }
+}
+
+
+struct WorkoutStatsView: View {
+    let totalWorkouts: Int
+    let bestLift: String
+    let lastWorkoutDate: String
+
+    var body: some View {
+        HStack(spacing: 20) {
+            StatCard(title: "Total Workouts", value: "\(totalWorkouts)")
+            StatCard(title: "Best Lift", value: bestLift)
+            StatCard(title: "Last Workout", value: lastWorkoutDate)
+        }
         .padding()
     }
 }
 
-final class NotificationService: NSObject, ObservableObject,
-    UNUserNotificationCenterDelegate
-{
-    @Published var showSettingsPage = false
-    @Published var badgeNumber = 0
-    var cancellables = Set<AnyCancellable>()
+struct StatCard: View {
+    let title: String
+    let value: String
 
-    @MainActor
-    override init() {
-        super.init()
-        UNUserNotificationCenter.current().delegate = self
-
-        $badgeNumber
-            .drop(while: { $0 < 1 })
-            .sink { badgeNumber in
-                UIApplication.shared.applicationIconBadgeNumber = badgeNumber
-            }.store(in: &cancellables)
-    }
-
-    @MainActor
-    func requestPushNotificationAuthorization() async {
-        do {
-            try await UNUserNotificationCenter.current().requestAuthorization(
-                options: [
-                    .alert,
-                    .sound,
-                    .badge,
-                    .carPlay,
-                    .provisional,
-                    .criticalAlert,
-                    .providesAppNotificationSettings,
-                ]
-            )
-
-        } catch {
-            print("Failed to request notification authorization: \(error)")
+    var body: some View {
+        VStack {
+            Text(value)
+                .font(.title)
+                .fontWeight(.bold)
+                .foregroundColor(.accentColor)
+            Text(title)
+                .font(.footnote)
+                .foregroundColor(.secondary)
         }
-
-        let testNotificationCategory = UNNotificationCategory(
-            identifier: "testNotificationCategory", actions: [],
-            intentIdentifiers: [], options: [])
-        UNUserNotificationCenter.current().setNotificationCategories([
-            testNotificationCategory
-        ])
+        .frame(width: 100, height: 80)
+        .background(Color(UIColor.systemGray6))
+        .cornerRadius(10)
+        .shadow(radius: 3)
     }
+}
 
-    func userNotificationCenter(
-        _ center: UNUserNotificationCenter,
-        openSettingsFor notification: UNNotification?
-    ) {
-        showSettingsPage = true
-    }
+struct NextWorkoutCard: View {
+    let workout: WorkoutTest?
 
-    func userNotificationCenter(
-        _ center: UNUserNotificationCenter,
-        didReceive response: UNNotificationResponse
-    ) async {
-        if response.actionIdentifier == "TICK_OFF_SET" {
-            // Logic to handle ticking off the set
-            print("Set ticked off!")
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Next Workout")
+                .font(.headline)
 
-            // Notify about rest timer
-            scheduleRestTimerNotification(restTime: 3)
-        } else if response.actionIdentifier == "START_REST_TIMER" {
-            // Logic to start the rest timer
-            print("Rest timer started!")
+            if let workout = workout {
+                VStack(alignment: .leading) {
+                    Text(workout.name)
+                        .font(.title3)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+                    Text(workout.description)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+            } else {
+                Text("No upcoming workout found")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
         }
+        .frame(maxWidth: .infinity)
+        .padding()
+        .background(Color(UIColor.systemGray6))
+        .cornerRadius(12)
+        .shadow(radius: 3)
     }
+}
 
-    func scheduleRestTimerNotification(restTime: Int) {
-        let content = UNMutableNotificationContent()
-        content.title = "Rest Timer"
-        content.body = "Your \(restTime)-minute rest timer has started."
-        content.sound = .default
+struct WorkoutTest {
+    let name: String
+    let description: String
+}
 
-        // Trigger after the rest period
-        let trigger = UNTimeIntervalNotificationTrigger(
-            timeInterval: TimeInterval(restTime * 60), repeats: false)
+struct HomeView: View {
+       @StateObject var viewModel = HomeViewModel()
 
-        let request = UNNotificationRequest(
-            identifier: "REST_TIMER_NOTIFICATION",
-            content: content,
-            trigger: trigger
-        )
+    var body: some View {
+            ScrollView {
+                VStack(spacing: 20) {
 
-        UNUserNotificationCenter.current().add(request)
+                    // Workout Statistics
+                    WorkoutStatsView(totalWorkouts: viewModel.totalWorkouts,
+                                     bestLift: viewModel.bestLift,
+                                     lastWorkoutDate: viewModel.lastWorkoutDate)
+
+                    // Training Calendar
+                    TrainingCalendarView(workoutDates: viewModel.workoutDates)
+
+                    // Upcoming Workout
+                    NextWorkoutCard(workout: viewModel.nextWorkout)
+
+                    // Start Workout Button
+                    Button(action: {
+                        viewModel.startWorkout()
+                    }) {
+                        Text("Start Workout of the Day")
+                            .font(.title3)
+                            .fontWeight(.bold)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.accentColor)
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
+                            .shadow(radius: 5)
+                    }
+                    .padding(.horizontal)
+                }
+                .padding()
+            }
+            .navigationTitle("Home")
     }
 }
 

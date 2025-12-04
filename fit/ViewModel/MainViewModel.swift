@@ -14,6 +14,7 @@ class MainViewViewModel: ObservableObject {
     @Published var isSignedIn: Bool = Auth.auth().currentUser != nil
     @Published var profile: ProfileViewModel
     @Published var isOnboarded: Bool = false
+    @Published var isLoaded: Bool = false
 
     private var authListener: AuthStateDidChangeListenerHandle?
 
@@ -27,16 +28,19 @@ class MainViewViewModel: ObservableObject {
         self.authListener = Auth.auth().addStateDidChangeListener {
             [weak self] _, user in
             Task {
-                if user == nil {
-                    return
-                }
-
                 guard let strongSelf = self else {
                     return
                 }
 
-                strongSelf.isSignedIn = Auth.auth().currentUser != nil
+                if user == nil {
+                    strongSelf.isSignedIn = false
+                    strongSelf.isLoaded = true
+                    return
+                }
+
+                strongSelf.isSignedIn = true
                 await strongSelf.profile.fetchUser()
+                strongSelf.isLoaded = true
             }
         }
     }

@@ -47,8 +47,8 @@ struct LoginView: View {
                             RoundedRectangle(cornerRadius: 10)
                                 .stroke(
                                     viewModel.emailError.isEmpty
-                                        ? Color.accentColor : Color.red,
-                                    lineWidth: viewModel.email.isEmpty ? 0 : 2)  // Show a green border when active
+                                        ? Color("AppIconColor") : Color.red,
+                                    lineWidth: viewModel.email.isEmpty ? 0 : 1)  // Show a green border when active
                         )
                         .onSubmit {
                             focusedField = .password
@@ -81,9 +81,9 @@ struct LoginView: View {
                             RoundedRectangle(cornerRadius: 10)
                                 .stroke(
                                     viewModel.passwordError.isEmpty
-                                        ? Color.accentColor : Color.red,
+                                        ? Color("AppIconColor") : Color.red,
                                     lineWidth: viewModel.password.isEmpty
-                                        ? 0 : 2)  // Show a green border when active
+                                        ? 0 : 1)  // Show a green border when active
                         )
                         .onSubmit {
                             viewModel.login()
@@ -108,7 +108,7 @@ struct LoginView: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.accentColor)
+                    .background(Color("AppIconColor"))
                     .cornerRadius(10)
                     .padding(.horizontal)
             }
@@ -118,7 +118,7 @@ struct LoginView: View {
                 Text("Don't have an account yet?")
                 NavigationLink(destination: SignUpView()) {
                     Text("Sign up")
-                        .foregroundColor(Color.accentColor)
+                        .foregroundColor(Color("AppIconColor"))
                         .fontWeight(.semibold)
                 }
             }

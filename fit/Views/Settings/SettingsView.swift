@@ -8,39 +8,16 @@
 import SwiftUI
 import UserNotifications
 
-struct SettingsRow: View {
-    let icon: String
-    let text: String
-    var trailingText: String? = nil
-
-    var body: some View {
-        HStack {
-            Image(systemName: icon)
-                .frame(width: 30, height: 30)
-                .foregroundColor(Color.accentColor)
-                .clipShape(Circle())
-
-            Text(text)
-                .font(.body)
-                .foregroundColor(.primary)
-
-            Spacer()
-
-            if let trailingText = trailingText {
-                Text(trailingText)
-                    .foregroundColor(.secondary)
-                    .font(.subheadline)
-            }
-        }
-    }
-}
-
 struct ProfileRow: View {
-    @StateObject var profileViewModel = ProfileViewModel()
+    @StateObject var viewModel: ProfileViewModel
+
+    init(profile: ProfileViewModel) {
+        _viewModel = StateObject(wrappedValue: profile)
+    }
 
     var body: some View {
         VStack {
-            if profileViewModel.user == nil {
+            if viewModel.user == nil {
                 HStack(alignment: .center) {
                     Spacer()
                     ProgressView()
@@ -62,7 +39,7 @@ struct ProfileRow: View {
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text(
-                            "\(profileViewModel.user?.firstName ?? "") \(profileViewModel.user?.lastName ?? "")"
+                            "\(viewModel.user?.firstName ?? "") \(viewModel.user?.lastName ?? "")"
                         )
                         .font(.headline)
                         .foregroundColor(.primary)
@@ -74,7 +51,7 @@ struct ProfileRow: View {
         }
         .onAppear {
             Task {
-                await profileViewModel.fetchUser()
+                await viewModel.fetchUser()
             }
         }
     }
@@ -90,56 +67,87 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        List {
-            // Profile Section
-            Section {
-                NavigationLink(
-                    destination: ProfileView(profile: profileViewModel)
-                ) {
-                    ProfileRow()
+        VStack {
+            List {
+                // Profile Section
+                Section {
+                    NavigationLink(
+                        destination: ProfileView(profile: profileViewModel)
+                    ) {
+                        ProfileRow(profile: profileViewModel)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
-            }
-            .listRowInsets(EdgeInsets())
-            .background(
-                Color(
-                    UITraitCollection.current.userInterfaceStyle == .dark
-                        ? UIColor.systemBackground
-                        : UIColor.secondarySystemBackground
+                .listRowInsets(EdgeInsets())
+                .background(
+                    Color(
+                        UITraitCollection.current.userInterfaceStyle == .dark
+                            ? UIColor.systemBackground
+                            : UIColor.secondarySystemBackground
+                    )
                 )
-            )
 
-            // Settings Categories
-            Section {
-                SettingsRow(icon: "gearshape.fill", text: "General")
+                // Settings Categories
+                Section {
+                    NavigationLink(destination: NotificationSettingsView()) {
+                        ListViewIconRow(
+                            text: "Notifications", icon: "bell.fill")
+                    }
 
-                NavigationLink(destination: NotificationSettingsView()) {
-                    SettingsRow(icon: "bell.fill", text: "Notifications")
+                    ListViewIconRow(
+                        text: "Language", icon: "globe", trailingText: "English"
+                    )
                 }
 
-                SettingsRow(
-                    icon: "globe", text: "Language", trailingText: "English"
-                )
+                Section("Exercises") {
+                    NavigationLink(
+                        destination: ExerciseListView(
+                            viewModel: createExerciseListMockVM())
+                    ) {
+                        ListViewIconRow(
+                            text: "Exercises",
+                            icon: "figure.strengthtraining.traditional")
+                    }
+                }
+
+                #if DEBUG
+                    Section("Debug Settings") {
+                        NavigationLink(
+                            destination: DebugView(profile: profileViewModel)
+                        ) {
+                            ListViewIconRow(
+                                text: "Debug Settings", icon: "ladybug.fill")
+                        }
+                    }
+                #endif
             }
+
+            Spacer()
 
             // App Version Footer
-            Section {
+            VStack(alignment: .center, spacing: 10) {
                 Button(action: {
                     viewModel.logout()
                 }) {
-                    SettingsRow(
-                        icon: "rectangle.portrait.and.arrow.forward",
-                        text: "Logout")
+                    HStack {
+                        Image(
+                            systemName: "rectangle.portrait.and.arrow.forward"
+                        )
+                        .foregroundColor(.red)
+
+                        Text("Logout")
+                            .foregroundColor(.red)
+                            .fontWeight(.bold)
+                    }
                 }
 
-                HStack {
-                    Spacer()
-                    Text("11.6.270267 AppStore")
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                }
+                Text("Version \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "Unknown Version") (Build \(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "Unknown build"))")
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+
             }
+            .padding(.vertical, 10)
+            .padding(.horizontal)
         }
         .navigationTitle("Settings")
         .listStyle(InsetGroupedListStyle())
